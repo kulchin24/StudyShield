@@ -1,7 +1,13 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { Source } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = import.meta.env.VITE_API_KEY;
+if (!apiKey) {
+  // This provides a clear error for developers if the environment variable is missing.
+  throw new Error("The VITE_API_KEY environment variable is not set. Please add it to your .env file or Vercel project settings.");
+}
+
+const ai = new GoogleGenAI({ apiKey });
 
 /**
  * Creates a new chat instance with the appropriate model and system instructions.
@@ -32,7 +38,8 @@ export const sendMessage = async (chat: Chat, message: string): Promise<ChatResp
   try {
     const response: GenerateContentResponse = await chat.sendMessage({ message });
     
-    const text = response.text;
+    // FIX: Use nullish coalescing operator to ensure `text` is always a string.
+    const text = response.text ?? '';
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
 
     let sources: Source[] = [];
