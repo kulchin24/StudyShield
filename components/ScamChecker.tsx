@@ -4,6 +4,22 @@ import { ChatMessage, Source } from '../types';
 import LoadingSpinner from './LoadingSpinner';
 import { Chat } from '@google/genai';
 
+// Simple Markdown renderer to handle bold text
+const MarkdownRenderer: React.FC<{ text: string }> = ({ text }) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+
+  return (
+    <pre className="whitespace-pre-wrap font-sans text-charcoal leading-relaxed">
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={index}>{part.slice(2, -2)}</strong>;
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </pre>
+  );
+};
+
 const ScamChecker: React.FC = () => {
   const [query, setQuery] = useState('');
   const [followUpQuery, setFollowUpQuery] = useState('');
@@ -12,11 +28,6 @@ const ScamChecker: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const chatRef = useRef<Chat | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
 
   const handleInitialCheck = async () => {
     if (!query.trim()) {
@@ -141,7 +152,11 @@ const ScamChecker: React.FC = () => {
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-xl p-4 rounded-2xl ${msg.role === 'user' ? 'bg-peacock-blue/10' : 'bg-bamboo/10'}`}>
-                  <pre className="whitespace-pre-wrap font-sans text-charcoal leading-relaxed">{msg.text}</pre>
+                  {msg.role === 'model' ? (
+                    <MarkdownRenderer text={msg.text} />
+                  ) : (
+                    <pre className="whitespace-pre-wrap font-sans text-charcoal leading-relaxed">{msg.text}</pre>
+                  )}
                   {msg.sources && msg.sources.length > 0 && renderSources(msg.sources)}
                 </div>
               </div>
@@ -155,7 +170,6 @@ const ScamChecker: React.FC = () => {
                   </div>
               </div>
             )}
-            <div ref={chatEndRef} />
           </div>
           <form onSubmit={handleFollowUp} className="flex items-center space-x-2">
             <input
